@@ -2,10 +2,11 @@ class City(object):
     INITIAL_COIN_COUNT = 1000000
     REPRESENTATIVE_PORTION = 1000
 
-    def __init__(self, country_count, country_index):
+    def __init__(self, country_count, country_index, country_name):
         self.completed = False
         self.neighbors = None
         self.country_count = country_count
+        self.country_name = country_name
 
         self.coins = [0] * country_count
         self.cache = [0] * country_count
@@ -49,6 +50,13 @@ class Country(object):
 
     def is_completed(self):
         return all(map(lambda c: c.completed, self.cities))
+    
+    def is_island(self):
+        for city in self.cities:
+            for neighbor in city.neighbors:
+                if neighbor.country_name != self.name:
+                    return False
+        return True
 
 class Algorithm(object):
     MAX_XY_VALUE = 10
@@ -110,35 +118,38 @@ class Algorithm(object):
                     x = country.xl + i
                     y = country.yl + j
 
-                    city = City(country_count, country_index)
+                    city = City(country_count, country_index, country.name)
 
                     area[x][y] = city
                     country.add_city(city)
 
             country_index += 1
 
-    def add_neighbors(self, area):
-        w = len(area)
-        h = len(area[0])
+    def check_neighbors(self, area, x, y, width, height, neighbors):
+        if x + 1 <= width - 1 and area[x + 1][y]:
+            neighbors.append(area[x + 1][y])
 
-        for x in range(w):
-            for y in range(h):
+        if x - 1 >= 0 and area[x - 1][y]:
+            neighbors.append(area[x - 1][y])
+
+        if y + 1 <= height - 1 and area[x][y + 1]:
+            neighbors.append(area[x][y + 1])
+
+        if y - 1 >= 0 and area[x][y - 1]:
+            neighbors.append(area[x][y - 1])
+
+    def add_neighbors(self, area):
+        width = len(area)
+        height = len(area[0])
+
+        for x in range(width):
+            for y in range(height):
                 city = area[x][y]
 
                 if city:
                     neighbors = []
 
-                    if x + 1 <= w - 1 and area[x + 1][y]:
-                        neighbors.append(area[x + 1][y])
-
-                    if x - 1 >= 0 and area[x - 1][y]:
-                        neighbors.append(area[x - 1][y])
-
-                    if y + 1 <= h - 1 and area[x][y + 1]:
-                        neighbors.append(area[x][y + 1])
-
-                    if y - 1 >= 0 and area[x][y - 1]:
-                        neighbors.append(area[x][y - 1])
+                    self.check_neighbors(area, x, y, width, height, neighbors)
 
                     city.neighbors = neighbors
 
@@ -152,6 +163,12 @@ class Algorithm(object):
     def is_completed(self):
         return all(map(lambda x: x.is_completed(), self.countries))
 
+    def check_islands(self):
+        if len(self.country_list) != 1:
+            for country in self.country_list:
+                if country.is_island():
+                    raise Exception(f'Country {country.name} is an island')
+                
     def run(self):
         self.init()
 
